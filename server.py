@@ -4,12 +4,12 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.requests import Request
 from fastapi.exceptions import HTTPException
-from pydantic import BaseModel
 import os
 import json
 import openai
 from openai import OpenAI
 from fastapi.middleware.cors import CORSMiddleware
+import base64
 
 from dotenv import load_dotenv
 
@@ -47,28 +47,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-# Define request and response models
-class ProblemSetRequest(BaseModel):
-    language: str
-    concepts: dict
-    num_problems: int
-
-
-class ProblemSetResponse(BaseModel):
-    language: str
-    problems: list
-
-
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/generate-problems")
-def generate_problems(language: str, concepts: str, num_problems: int):
+def generate_problems(specification: str):
     try:
-        # Parse concepts JSON string into a Python dictionary
-        concepts_dict = json.loads(concepts)
+        # Decode the base64-encoded specification
+        decoded_spec = base64.b64decode(specification).decode("utf-8")
 
         # Construct the system prompt
         system_prompt = """You are a Parsons problem generator.
@@ -117,29 +105,23 @@ The problems should be relevant to the selected concepts without including any o
 The collection should have exactly as many problems as specified in the JSON object that will follow.
 """
 
-        # Prepare the user prompt
-        user_prompt = json.dumps(
-            {
-                "language": language,
-                "concepts": concepts_dict,
-                "num_problems": num_problems,
-            },
-            indent=4,
-        )
-
         # Call OpenAI API
-        response = client.chat.completions.create(
+        response = openai.chat.completions.create(
             model=openai_api_model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
+                {"role": "user", "content": decoded_spec}
             ],
-            response_format={"type": "json_object"},
+            response_format={"type": "json_object"}
         )
 
-        return JSONResponse(json.loads(response.choices[0].message.content))
+        # Extract the AI-generated content
+        ai_response = response.choices[0].message.content
+
+        # Parse the AI response into JSON
+        problems = json.loads(ai_response)
+
+        return JSONResponse(content=problems)
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error generating problems: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error generating problems: {str(e)}")

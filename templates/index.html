@@ -32,9 +32,12 @@
         <div id="concept-groups"></div>
 
         <label for="num_problems">Specify Number of Problems:</label>
-        <input type="range" id="num_problems" name="num_problems" min="1" max="10" value="3" oninput="numProblemsOutput.value = this.value; updateUrl();">
+        <input type="range" id="num_problems" name="num_problems" min="1" max="10" value="3" oninput="numProblemsOutput.value = this.value; updateUI();">
         <output id="numProblemsOutput">3</output><br><br>
     </form>
+
+    <h2>Problem Specification</h2>
+    <pre id="problem-specification"></pre>
 
     <h2>Generated URL</h2>
     <a id="generated-url" href="#" target="_blank">Click to test the generated URL</a>
@@ -104,7 +107,7 @@
                 checkbox.name = 'concepts';
                 checkbox.value = concept;
                 checkbox.checked = defaultValue;
-                checkbox.addEventListener('change', updateUrl);
+                checkbox.addEventListener('change', updateUI);
 
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(` ${concept}`));
@@ -115,10 +118,9 @@
             conceptGroupsContainer.appendChild(groupDiv);
         });
 
-        const generatedUrlAnchor = document.getElementById('generated-url');
         const output = document.getElementById('output');
 
-        function updateUrl() {
+        function updateUI() {
             const language = document.getElementById('language').value;
             const concepts = conceptGroups.reduce((acc, group) => {
                 acc[group.difficulty] = {};
@@ -129,27 +131,39 @@
             }, {});
             const num_problems = document.getElementById('num_problems').value;
 
-            const queryParams = new URLSearchParams({
+            const problemSpec = {
                 language,
-                concepts: JSON.stringify(concepts),
-                num_problems
-            });
+                concepts,
+                num_problems: parseInt(num_problems, 10)
+            };
 
+            // Update problem specification display
+            document.getElementById('problem-specification').textContent = JSON.stringify(problemSpec, null, 2);
+
+            // Update generated URL
+            const queryParams = new URLSearchParams({
+                specification: btoa(JSON.stringify(problemSpec))
+            });
             const url = `/generate-problems?${queryParams.toString()}`;
+            const generatedUrlAnchor = document.getElementById('generated-url');
             generatedUrlAnchor.href = url;
             generatedUrlAnchor.textContent = url;
         }
 
-        // Update URL on language change
-        languageSelect.addEventListener('change', updateUrl);
+        // Update UI on language change
+        languageSelect.addEventListener('change', updateUI);
+        document.querySelectorAll('input[name="concepts"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateUI);
+        });
+        document.getElementById('num_problems').addEventListener('input', updateUI);
 
-        // Initial URL update
-        updateUrl();
+        // Initial update
+        updateUI();
 
         const previewButton = document.getElementById('preview-result');
         previewButton.addEventListener('click', () => {
             previewButton.disabled = true;
-            fetch(generatedUrlAnchor.href)
+            fetch(document.getElementById('generated-url').href)
                 .then(response => {
                     previewButton.disabled = false;
                     if (!response.ok) {

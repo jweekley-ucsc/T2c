@@ -64,17 +64,35 @@ templates/           # HTML templates
 
 ### `GET /generate-problems`
 
-Generates Parsons problems based on the provided query parameters.
+Generates Parsons problems based on the provided query parameter.
 
-#### Query Parameters:
-- `language` (string): The programming language (e.g., "Python", "JavaScript").
-- `concepts` (JSON string): A dictionary mapping concepts to `true` or `false`.
-- `num_problems` (integer): The number of problems to generate.
+#### Query Parameter:
+- `specification` (string): A base64-encoded JSON string containing the problem specification. The JSON object should have the following structure:
+  ```json
+  {
+      "language": "Python",
+      "concepts": {
+          "Easy": {
+              "Variable Assignment": true,
+              "Basic Arithmetic": false
+          },
+          "Medium": {
+              "Functions": true
+          },
+          "Hard": {
+              "Recursion": false
+          }
+      },
+      "num_problems": 3
+  }
+  ```
 
 #### Example Request:
 ```bash
-curl "http://127.0.0.1:8000/generate-problems?language=Python&concepts={%22Loops%22:true,%22Functions%22:false}&num_problems=3"
+curl "http://127.0.0.1:8000/generate-problems?specification=eyJsYW5ndWFnZSI6ICJQeXRob24iLCAiY29uY2VwdHMiOiB7IkVhc3kiOiB7IlZhcmlhYmxlIEFzc2lnbm1lbnQiOiB0cnVlLCAiQmFzaWMgQXJpdGhtZXRpYyI6IGZhbHNlfSwgIk1lZGl1bSI6IHsiRnVuY3Rpb25zIjogdHJ1ZX0sICJIYXJkIjogeyJSZWN1cnNpb24iOiBmYWxzZX19LCAibnVtX3Byb2JsZW1zIjogM30="
 ```
+
+The `specification` parameter is a base64-encoded string of the JSON object. You can use tools like `btoa` in JavaScript or `base64` in Python to encode the JSON object.
 
 ## License
 
@@ -82,5 +100,6 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Acknowledgments
 
+- Written by [Adam Smith](https://adamsmith.as) using [GitHub Copilot agent mode](https://code.visualstudio.com/blogs/2025/02/24/introducing-copilot-agent-mode)
 - Built with [FastAPI](https://fastapi.tiangolo.com/)
 - Powered by [OpenAI GPT](https://openai.com/)
