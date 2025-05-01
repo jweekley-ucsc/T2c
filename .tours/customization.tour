@@ -1,0 +1,38 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Customization",
+  "steps": [
+    {
+      "file": "templates/index.html",
+      "description": "The first step in customizing this generator is deciding the range of programming languages you want your generator to support.",
+      "line": 51
+    },
+    {
+      "file": "templates/index.html",
+      "description": "If your customized generator uses the same notion of concept groups with individual concepts that can be enabled with checkboxes (`true`/`false`) value, then you won't need to change anything here.",
+      "line": 95
+    },
+    {
+      "file": "templates/index.html",
+      "description": "Uh, it is probably a good idea to stick with the pre-existing concept group structure to avoid needing to make additional changes here.",
+      "line": 125
+    },
+    {
+      "file": "server.py",
+      "description": "Editing the system prompt is probably the most important part of customization.",
+      "line": 62
+    },
+    {
+      "file": "server.py",
+      "description": "This is the part where you give the LLM a single example of the format you are looking for. Beyond defining the target format, this example also implicitly defines many pedagogical details (such as the typical size/scope of your desired problem design or the range of thoughts that are relevant to coming up with a good next problem in the sequence).",
+      "line": 69
+    },
+    {
+      "file": "server.py",
+      "description": "If you notice that the generated problems aren't as relevant to the task definition as you would like, you can explain the kind of relevance you are looking for here. Strong LLMs will often be able to infer what you meant without much detail.",
+      "line": 104
+    }
+  ],
+  "isPrimary": false,
+  "description": "Suggests locations in the code where you can customize the generator."
+}

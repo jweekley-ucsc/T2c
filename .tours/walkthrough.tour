@@ -1,0 +1,83 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Walkthrough",
+  "steps": [
+    {
+      "file": "server.py",
+      "description": "This is the entrypoint for our web service. When we run `uvicorn server:app` on the command line, this is the `app` in the `server` module that is being mentioned.",
+      "line": 32
+    },
+    {
+      "file": "server.py",
+      "description": "We are trying to implement a `/generate-problems` route that uses GenAI to generate Parsons problems given a generation task specification.",
+      "line": 55
+    },
+    {
+      "file": "server.py",
+      "description": "The user usually doesn't have a task specification in hand, so we are providing the `/` route (mapped to `index.html`) so that they can interact with a traditional graphical user interface to create one.",
+      "line": 50
+    },
+    {
+      "file": "templates/index.html",
+      "description": "In `index.html`, we use a data-driven design to setup the range of programming languages and concepts available in our generator. If we were to change the JSON definition of concepts here, the range of checkboxes on the user interface would update correspondingly.",
+      "line": 51
+    },
+    {
+      "file": "templates/index.html",
+      "description": "This segment loops over all of the concept groups defined earlier to dynamically generate the HTML user interface elements.",
+      "line": 95
+    },
+    {
+      "file": "templates/index.html",
+      "description": "Whenever the user interface elements change, we update the other components of the UI.",
+      "line": 154
+    },
+    {
+      "file": "templates/index.html",
+      "description": "For example, this is where we show the URL for the current generation task (that the user could copy to re-run the generator for this same task again).",
+      "line": 147
+    },
+    {
+      "file": "templates/index.html",
+      "description": "If the user presses a button to get a result preview, we use `fetch` to make a request against the `/generate-problems` endpoint.",
+      "line": 166
+    },
+    {
+      "file": "server.py",
+      "description": "The first step in generating some problems is recovering the generation task specification that was part of the endpoint URL after the `?`.",
+      "line": 59
+    },
+    {
+      "file": "server.py",
+      "description": "Next, we need tell an LLM what to do with the task specification. This prompt establishes the target output format and reminds the LLM to try to follow the clues given in the task specification object that we generated using the UI.",
+      "line": 62
+    },
+    {
+      "file": "server.py",
+      "description": "Part of the generated problem structure is a `_thoughts` field. This isn't required, but it gives non-yapping LLMs a chance to yap, potentially improving the consistency and prompt-adherence in their results.",
+      "line": 75
+    },
+    {
+      "file": "server.py",
+      "description": "To actually generate the problems, we simulate a short conversation with the LLM:\n - System prompt: \"You are a Parsons problem generator...\"\n - First user message: This the task specification object from the UI\n - First assistant message (a generated reply): These are the generated problems, constrained to be in valid JSON syntax",
+      "line": 109
+    },
+    {
+      "file": "server.py",
+      "description": "The final step of generation is to send the generated sequence of Parsons problems back to whoever made the request against `/generate-problems` to begin.",
+      "line": 124
+    },
+    {
+      "file": "templates/index.html",
+      "description": "Back in the UI, if the request to `/generate-problems` succeeded, we then pretty-print the JSON result for the user to see it.",
+      "line": 175
+    },
+    {
+      "file": ".env",
+      "description": "Don't forget to find and add an `OPENAI_API_KEY=` line here! (You can also specify `OPENAI_API_BASE` and `OPENAI_API_MODEL_NAME` here.)",
+      "line": 1
+    }
+  ],
+  "isPrimary": true,
+  "description": "Guides the developer through the codebase, showing one problem generation cycle."
+}
