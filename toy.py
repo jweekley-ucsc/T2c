@@ -82,17 +82,19 @@ The collection should have exactly as many problems as specified in the JSON obj
 """
 
     # Call OpenAI API
-    response = client.chat.completions.create(
+    chunks = client.chat.completions.create(
         model=openai_api_model_name,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(task_specification)},
         ],
         response_format={"type": "json_object"},
+        stream=True,
     )
 
-    # Parse and return the AI-generated content
-    return json.loads(response.choices[0].message.content)
+    for chunk in chunks:
+        if chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
 
 
 if __name__ == "__main__":
@@ -108,7 +110,8 @@ if __name__ == "__main__":
     }
 
     # Generate problems
-    problems = generate_problems(task_spec)
+    deltas = generate_problems(task_spec)
 
-    # Print the generated problems
-    print(json.dumps(problems, indent=2))
+    # Print the streaming output
+    for delta in deltas:
+        print(delta, end="")
