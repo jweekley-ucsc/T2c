@@ -106,7 +106,7 @@ The collection should have exactly as many problems as specified in the JSON obj
 """
 
         # Call OpenAI API
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model=openai_api_model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
