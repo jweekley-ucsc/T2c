@@ -18,7 +18,7 @@ load_dotenv()
 
 # Get OpenAI API base and model name from environment variables
 openai_api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
-openai_api_model_name = os.getenv("OPENAI_API_MODEL_NAME", "gpt-4")
+openai_api_model_name = os.getenv("OPENAI_API_MODEL_NAME", "gpt-4o")
 
 # Get OpenAI API key from environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
