@@ -137,7 +137,7 @@
             document.getElementById('problem-specification').textContent = JSON.stringify(problemSpec, null, 2);
             // Update generated URL
             const queryParams = new URLSearchParams({
-                specification: btoa(JSON.stringify(problemSpec))
+                specification: btoa(unescape(encodeURIComponent(JSON.stringify(problemSpec))))
             });
             const url = `/generate-problems?${queryParams.toString()}`;
             const generatedUrlAnchor = document.getElementById('generated-url');
