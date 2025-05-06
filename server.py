@@ -63,7 +63,7 @@ def generate_problems(specification: str):
 
 Your task is to generate a set of problems based on the selected concepts and programming language.
 Each problem should include a problem statement, a solution, and distractor blocks.
-It is okay if the distractor blocks are not complete or contain duplicates of the solution blocks. The problem display interface will handle that. In particular, the distrator set will be formed by the union of lines in the distractor blocks differenced by the set of solution blocks.
+It is okay if the distractor blocks are not complete or contain duplicates of the solution blocks. The problem display interface will handle that. In particular, the distractor set will be formed by the union of lines in the distractor blocks differenced by the set of solution blocks.
 Use "_thoughts" to sketch out the problem before writing the detailed specification for it.
 
 The output should be a JSON object with the following structure:
