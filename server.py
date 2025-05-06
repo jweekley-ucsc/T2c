@@ -1,49 +1,45 @@
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from fastapi.requests import Request
-from fastapi.exceptions import HTTPException
 import os
 import json
-import openai
-from openai import OpenAI
-from fastapi.middleware.cors import CORSMiddleware
 import base64
-
 from dotenv import load_dotenv
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException
+
+from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Get OpenAI API base and model name from environment variables
+# Get OpenAI API configuration
 openai_api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 openai_api_model_name = os.getenv("OPENAI_API_MODEL_NAME", "gpt-4o")
-
-# Get OpenAI API key from environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
+
 if not openai_api_key:
     raise ValueError("Please add your OpenAI API key to the .env file.")
 
-# Configure OpenAI API
+# Configure OpenAI client
 client = OpenAI(api_key=openai_api_key, base_url=openai_api_base)
 
 # Initialize FastAPI app
 app = FastAPI()
 
-# Add CORS middleware to allow all origins
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=["*"],  # Allow all origins (for development purposes)
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Mount the static files directory
+# Mount static and template directories
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Set up templates directory
 templates = Jinja2Templates(directory="templates")
 
 
@@ -55,68 +51,87 @@ def read_root(request: Request):
 @app.get("/generate-problems")
 def generate_problems(specification: str):
     try:
-        # Decode the base64-encoded specification
+        # Decode the base64-encoded user specification
         decoded_spec = base64.b64decode(specification).decode("utf-8")
+        user_spec = json.loads(decoded_spec)
 
-        # Construct the system prompt
-        system_prompt = """You are a Parson’s problem generator designed for sentence construction in French.
+        # Get user preferences
+        target_language = user_spec.get("language", "French").strip().capitalize()
+        num_problems = user_spec.get("num_problems", 3)
 
-Your task is to generate a set of sentence scramble problems focused on French grammar and syntax. Each problem must help learners practice assembling grammatically correct and semantically appropriate French sentences using given word or phrase blocks.
+        # Define vocab for different Romance languages
+        language_vocab = {
+            "French": {
+                "examples": "passé composé, le déjeuner, l’école, il fait beau",
+                "level_reference": "A1–B1",
+                "article_example": "à l’école"
+            },
+            "Spanish": {
+                "examples": "pretérito perfecto, desayuno, la escuela, hace buen tiempo",
+                "level_reference": "A1–B1",
+                "article_example": "a la escuela"
+            },
+            "Italian": {
+                "examples": "passato prossimo, colazione, la scuola, fa bel tempo",
+                "level_reference": "A1–B1",
+                "article_example": "a scuola"
+            }
+        }
 
-Each problem should include the following:
+        if target_language not in language_vocab:
+            raise HTTPException(status_code=400, detail=f"Unsupported language: {target_language}")
 
-title: A short instructional phrase describing what kind of sentence the user is to construct. It must be in French.
-solution: A list of words or phrase blocks in the correct order to form a valid French sentence.
-distractors: A list of incorrect word or phrase blocks. These can include:
-Incorrect verb conjugations (e.g., “vas” instead of “vais” for je)
-Syntactic errors (e.g., inverted phrases like “école à”)
-Wrong word choices (e.g., “tout” instead of “tous”)
-Incorrect articles or prepositions (e.g., “à école” instead of “à l’école”)
-Overspecified/underspecified fragments (e.g., “le déjeuner petit”)
-Words from similar contexts but unrelated to the target sentence
-Output format:
-You should return a JSON object with the following structure:
+        vocab = language_vocab[target_language]
 
-{
-"problems": [
-{
-"title": "...", // Brief French instruction
-"solution": [ "...", ... ], // List of valid words/phrases in correct order
-"distractors": [ "...", ... ] // List of plausible but incorrect words/phrases
-},
-...
-]
-}
+        # Construct the system prompt for the LLM
+        system_prompt = f"""
+You are a Parson’s problem generator designed for sentence construction in {target_language}.
+Your task is to generate a set of sentence scramble problems focused on grammatical and syntactic knowledge in {target_language}. Each problem must help learners practice assembling grammatically correct and semantically appropriate {target_language} sentences using given word or phrase blocks.
+
+Each problem must include the following fields:
+- title: A short instructional phrase in {target_language}
+- solution: A list of words/phrases in correct order to form a valid declarative sentence
+- distractors: Plausible but incorrect alternatives, such as:
+  - Verb conjugation errors
+  - Incorrect word order
+  - Errors in gender/number agreement
+  - Incorrect prepositions (e.g., "{vocab['article_example']}")
+
+Output only a JSON object with the following structure:
+{{
+  "problems": [
+    {{
+      "title": "...",
+      "solution": ["...", "..."],
+      "distractors": ["...", "..."]
+    }},
+    ...
+  ]
+}}
 
 Guidelines:
-
-Focus on standard present-tense declarative sentences in French unless otherwise specified.
-Choose everyday vocabulary suitable for language learners at the A1–B1 (beginner to intermediate) level.
-Use a mix of subject pronouns (je, tu, il/elle, nous, vous, ils/elles), common verbs (aller, faire, avoir, être, prendre, etc.), and commonly used sentence structures.
-The sentence should be communicative—something that could plausibly be said or written in a real-life context, such as daily routines, school, travel, weather, time, etc.
-Use correct French punctuation and diacritics in all words (e.g., “école”, “huit”, “déjeuner”).
-Each problem should be solvable by dragging and dropping the solution blocks into the correct order.
-The generator must return exactly as many problems as requested in the prompt that follows this system message.
-
-Do not include explanations in your output—only generate and return the JSON object as specified.
+- Generate exactly {num_problems} problems
+- Use standard present-tense declarative sentences (unless conceptually needed otherwise)
+- Keep sentence topics suitable for {vocab['level_reference']} learners
+- Include correct diacritics in {target_language} (e.g., {vocab['examples']})
+- Do not add any instructional text or explanations — only the JSON object
 """
 
-        # Call OpenAI API
+        # Optional user prompt (can include difficulty/concepts later)
+        user_prompt = f"Please generate {num_problems} scrambled sentence problems in {target_language}."
+
+        # Request from OpenAI
         response = client.chat.completions.create(
             model=openai_api_model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": decoded_spec}
+                {"role": "user", "content": user_prompt}
             ],
             response_format={"type": "json_object"}
         )
 
-        # Extract the AI-generated content
         ai_response = response.choices[0].message.content
-
-        # Parse the AI response into JSON
         problems = json.loads(ai_response)
-
         return JSONResponse(content=problems)
 
     except Exception as e:
