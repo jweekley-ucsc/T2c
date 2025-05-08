@@ -1,178 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Romance Language Parsons Problem Generator</title>
-    <link rel="icon" href="data:,"></link>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .difficulty-group {
-            margin-bottom: 20px;
-        }
-        .difficulty-group h3 {
-            margin-bottom: 10px;
-        }
-        #generated-url {
-            margin-top: 20px;
-            word-wrap: break-word;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Romance Language Parsons Problem Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ucsc-blue: #003660;
+      --ucsc-gold: #ffc72c;
+      --ucsc-light-blue: #007398;
+      --bg-color: #f5f5f5;
+      --surface-color: #ffffff;
+      --text-color: #222;
+    }
+    body {
+      margin: 0;
+      font-family: 'Source Sans Pro', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    header {
+      background-color: var(--ucsc-blue);
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+    main {
+      padding: 2rem;
+    }
+    h2, h3 {
+      color: var(--ucsc-blue);
+    }
+    select, input[type="range"], button {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin: 0.25rem 0.5rem 0.25rem 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+    }
+    button.loading {
+      background-color: var(--ucsc-gold) !important;
+      color: black;
+      cursor: wait;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .panel {
+      background: var(--surface-color);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .container {
+      display: flex;
+      gap: 2rem;
+    }
+    .category, .selected-box {
+      max-width: 350px;
+      flex: 1;
+    }
+    #concept-list label,
+    #selected-concepts span {
+      display: block;
+      margin: 0.3rem 0;
+      cursor: help;
+    }
+    #selected-concepts {
+      background-color: #f7f7f7;
+      padding: 0.75rem;
+      border-radius: 5px;
+      min-height: 80px;
+      border: 1px solid #ddd;
+    }
+    .config-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .config-buttons button {
+      background-color: var(--ucsc-light-blue);
+      color: white;
+      font-size: 0.9rem;
+      border: none;
+      padding: 0.4rem 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .config-buttons button:hover {
+      background-color: #005f7a;
+    }
+    .output-panel {
+      position: relative;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .output-panel.active {
+      opacity: 1;
+    }
+    .toolbar {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      display: none;
+      font-size: 0.85rem;
+      gap: 0.5rem;
+    }
+    .toolbar button {
+      background: none;
+      color: var(--ucsc-blue);
+      border: none;
+      font-size: inherit;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0.2rem;
+    }
+    .toolbar button:hover {
+      background-color: #e7edf4;
+      border-radius: 4px;
+    }
+    pre {
+      background-color: #f8f9fb;
+      padding: 1rem;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+      overflow-x: auto;
+    }
+    @keyframes fadeScale {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-spec {
+      animation: fadeScale 0.3s ease;
+    }
+    @media (max-width: 768px) {
+      main {
+        padding: 1rem;
+      }
+      .container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .row {
+        flex-direction: column;
+      }
+      select, input[type="range"], button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>Romance Language Parsons Problem Generator</h1>
-    <form id="problem-form">
-        <label for="language">Select Romance Language:</label>
-        <select id="language" name="language" required></select><br><br>
+<header>
+  <h1>UC Santa Cruz • Romance Language Parsons Problem Generator</h1>
+</header>
+<main>
+  <p>📘 Hover over any grammar concept to see a quick definition.</p>
 
-        <h2>Select Concepts to Include</h2>
-        <div id="concept-groups"></div>
+  <div class="panel">
+    <div class="row">
+      <label>Language:
+        <select id="language">
+          <option>French</option>
+          <option>Italian</option>
+          <option>Spanish</option>
+        </select>
+      </label>
+      <label>Number of Problems:
+        <input type="range" id="num_problems" min="1" max="10" value="3">
+        <output id="numProblemsOutput">3</output>
+      </label>
+    </div>
+    <div class="row">
+      <label>Grammar Category:
+        <select id="concept-category"></select>
+      </label>
+    </div>
+    <div class="row container">
+      <div class="category">
+        <h3>Available Concepts</h3>
+        <div id="concept-list"></div>
+      </div>
+      <div class="selected-box">
+        <h3>Selected Concepts</h3>
+        <div id="selected-concepts"></div>
+        <div class="config-buttons">
+          <button id="save-config">Save Configuration</button>
+          <input type="file" id="import-config" accept=".json" style="display: none;" />
+          <button id="load-config">Load Configuration</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        <label for="num_problems">Specify Number of Problems:</label>
-        <input type="range" id="num_problems" name="num_problems" min="1" max="10" value="3" oninput="numProblemsOutput.value = this.value; updateUI();">
-        <output id="numProblemsOutput">3</output><br><br>
-    </form>
-
+  <div class="panel">
     <h2>Problem Specification</h2>
     <pre id="problem-specification"></pre>
+  </div>
 
-    <h2>Generated URL</h2>
-    <a id="generated-url" href="#" target="_blank">Click to test the generated URL</a>
+  <div class="panel">
+    <h2>API Request</h2>
+    <p>Clicking below will copy the full API URL based on your current configuration. You can paste this in another browser tab or tool to fetch the results here by selecting the “Generate JSON” button below.</p>
+    <button id="copy-api-url">Copy API URL</button>
+  </div>
 
-    <h2>Generated Problems</h2>
-    <button type="button" id="preview-result">Preview Result</button>
-    <pre id="output"></pre>
+  <div class="panel">
+    <h2>Generate JSON</h2>
+    <p>Click below to contact the server and generate new Parsons problems using your selected configuration.</p>
+    <button type="button" id="preview-result">Generate JSON</button>
+  </div>
 
-    <script>
-        const languages = ["French", "Italian", "Spanish"];
-        const conceptGroups = [
-            {
-                difficulty: "Easy",
-                concepts: {
-                    "Subject–verb agreement": true,
-                    "Definite and indefinite articles": false,
-                    "Basic sentence structure": true,
-                    "Regular verb conjugation (present tense)": false,
-                    "Pronoun use": false
-                }
-            },
-            {
-                difficulty: "Medium",
-                concepts: {
-                    "Past tenses (passé composé / passato prossimo)": false,
-                    "Gender and number agreement": false,
-                    "Reflexive verbs": false,
-                    "Prepositions and contractions": false,
-                    "Imperfect tense (imparfait / imperfetto)": false
-                }
-            },
-            {
-                difficulty: "Hard",
-                concepts: {
-                    "Plus-que-parfait / Trapassato prossimo": false,
-                    "Subjunctive mood (le subjonctif / il congiuntivo)": false,
-                    "Future perfect (futur antérieur / futuro anteriore)": false,
-                    "Indirect speech with tense shifting": false,
-                    "Si clauses and conditional tenses": false
-                }
-            }
-        ];
-    
-        // Populate language dropdown
-        const languageSelect = document.getElementById('language');
-        languages.forEach(language => {
-            const option = document.createElement('option');
-            option.value = language;
-            option.textContent = language;
-            languageSelect.appendChild(option);
-        });
-    
-        // Populate concept groups
-        const conceptGroupsContainer = document.getElementById('concept-groups');
-        conceptGroups.forEach(group => {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'difficulty-group';
-            const groupTitle = document.createElement('h3');
-            groupTitle.textContent = group.difficulty;
-            groupDiv.appendChild(groupTitle);
-    
-            Object.entries(group.concepts).forEach(([concept, defaultValue]) => {
-                const label = document.createElement('label');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.name = 'concepts';
-                checkbox.value = concept;
-                checkbox.checked = defaultValue;
-                checkbox.addEventListener('change', updateUI);
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${concept}`));
-                groupDiv.appendChild(label);
-                groupDiv.appendChild(document.createElement('br'));
-            });
-    
-            conceptGroupsContainer.appendChild(groupDiv);
-        });
-    
-        const output = document.getElementById('output');
-    
-        function updateUI() {
-            const language = document.getElementById('language').value;
-            const concepts = conceptGroups.reduce((acc, group) => {
-                acc[group.difficulty] = {};
-                Object.entries(group.concepts).forEach(([concept]) => {
-                    acc[group.difficulty][concept] = document.querySelector(`input[name="concepts"][value="${concept}"]`).checked;
-                });
-                return acc;
-            }, {});
-            const num_problems = document.getElementById('num_problems').value;
-            const problemSpec = {
-                language,
-                concepts,
-                num_problems: parseInt(num_problems, 10)
-            };
-            // Update problem specification display
-            document.getElementById('problem-specification').textContent = JSON.stringify(problemSpec, null, 2);
-            // Update generated URL
-            const queryParams = new URLSearchParams({
-                specification: btoa(unescape(encodeURIComponent(JSON.stringify(problemSpec))))
-            });
-            const url = `/generate-problems?${queryParams.toString()}`;
-            const generatedUrlAnchor = document.getElementById('generated-url');
-            generatedUrlAnchor.href = url;
-            generatedUrlAnchor.textContent = url;
+  <div id="output-panel" class="panel output-panel" style="display: none;">
+    <h2>Generated Parsons Problems</h2>
+    <div class="toolbar" id="output-toolbar">
+      <button id="copy-output">Copy</button>
+      <button id="toggle-output">Collapse</button>
+      <button id="save-output">Save</button>
+    </div>
+    <pre id="output" style="display: none;"></pre>
+  </div>
+</main>
+<script>
+    const languageSelect = document.getElementById("language");
+    const numSlider = document.getElementById("num_problems");
+    const numPreview = document.getElementById("numProblemsOutput");
+    const conceptCategorySelect = document.getElementById("concept-category");
+    const conceptList = document.getElementById("concept-list");
+    const selectedConceptsBox = document.getElementById("selected-concepts");
+    const specBox = document.getElementById("problem-specification");
+    const previewBtn = document.getElementById("preview-result");
+    const outputPanel = document.getElementById("output-panel");
+    const output = document.getElementById("output");
+    const toolbar = document.getElementById("output-toolbar");
+    const copyBtn = document.getElementById("copy-output");
+    const toggleBtn = document.getElementById("toggle-output");
+    const saveBtn = document.getElementById("save-output");
+    const saveConfigBtn = document.getElementById("save-config");
+    const loadConfigBtn = document.getElementById("load-config");
+    const importInput = document.getElementById("import-config");
+    const copyApiUrlBtn = document.getElementById("copy-api-url");
+  
+    const selectedConcepts = {};
+    const conceptCategories = {
+      "Parts of Speech": [
+        "Articles (definite/indefinite)",
+        "Noun–adjective agreement",
+        "Personal subject pronouns",
+        "Object pronouns",
+        "Prepositions and contractions"
+      ],
+      "Sentence Structure": [
+        "Basic sentence structure",
+        "Negation",
+        "Questions and inversion",
+        "Reflexive structures"
+      ],
+      "Verb Tenses and Moods": [
+        "Present tense",
+        "Past tense (passé composé / passato prossimo)",
+        "Imperfect tense",
+        "Pluperfect tense",
+        "Future tense",
+        "Future perfect",
+        "Conditional mood",
+        "Subjunctive mood",
+        "Imperative mood"
+      ],
+      "Grammar Usage": [
+        "Commands",
+        "Si clauses and conditionals",
+        "Time expressions",
+        "Modal verbs"
+      ]
+    };
+  
+    function updateSelectedConceptsList() {
+      selectedConceptsBox.innerHTML = '';
+      Object.entries(selectedConcepts).forEach(([concept, checked]) => {
+        if (checked) {
+          const span = document.createElement("span");
+          span.textContent = concept;
+          span.title = concept;
+          selectedConceptsBox.appendChild(span);
         }
-    
-        // Setup event listeners
-        languageSelect.addEventListener('change', updateUI);
-        document.querySelectorAll('input[name="concepts"]').forEach(checkbox => {
-            checkbox.addEventListener('change', updateUI);
+      });
+    }
+  
+    function generateApiUrl() {
+      const spec = {
+        language: languageSelect.value,
+        num_problems: parseInt(numSlider.value),
+        concepts: { selected: selectedConcepts }
+      };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(spec))));
+      return `${window.location.origin}/generate-problems?specification=${encoded}`;
+    }
+  
+    function updateSpecification() {
+      const spec = {
+        language: languageSelect.value,
+        num_problems: parseInt(numSlider.value),
+        concepts: { selected: selectedConcepts }
+      };
+      specBox.textContent = JSON.stringify(spec, null, 2);
+      specBox.classList.remove("animate-spec");
+      void specBox.offsetWidth;
+      specBox.classList.add("animate-spec");
+      numPreview.textContent = spec.num_problems;
+    }
+  
+    function renderConcepts() {
+      const category = conceptCategorySelect.value;
+      const concepts = conceptCategories[category];
+      conceptList.innerHTML = "";
+      concepts.forEach(concept => {
+        const label = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = concept;
+        cb.checked = selectedConcepts[concept] || false;
+        cb.addEventListener("change", () => {
+          selectedConcepts[concept] = cb.checked;
+          updateSpecification();
+          updateSelectedConceptsList();
         });
-        document.getElementById('num_problems').addEventListener('input', updateUI);
-    
-        // Initial render
-        updateUI();
-    
-        const previewButton = document.getElementById('preview-result');
-        previewButton.addEventListener('click', () => {
-            previewButton.disabled = true;
-            fetch(document.getElementById('generated-url').href)
-                .then(response => {
-                    previewButton.disabled = false;
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch problems');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    output.textContent = JSON.stringify(data, null, 2);
-                })
-                .catch(error => {
-                    output.textContent = `Error: ${error.message}`;
-                });
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(concept));
+        conceptList.appendChild(label);
+      });
+    }
+  
+    previewBtn.addEventListener("click", () => {
+      const url = generateApiUrl();
+      previewBtn.disabled = true;
+      previewBtn.classList.add("loading");
+      previewBtn.textContent = "Generating JSON";
+  
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch problems.");
+          return res.json();
+        })
+        .then(data => {
+          output.textContent = JSON.stringify(data, null, 2);
+          output.style.display = "block";
+          toolbar.style.display = "flex";
+          outputPanel.style.display = "block";
+          outputPanel.classList.add("active");
+        })
+        .catch(err => {
+          output.textContent = `Error: ${err.message}`;
+          output.style.display = "block";
+          toolbar.style.display = "none";
+          outputPanel.style.display = "block";
+          outputPanel.classList.add("active");
+        })
+        .finally(() => {
+          previewBtn.disabled = false;
+          previewBtn.textContent = "Generate JSON Again";
+          previewBtn.classList.remove("loading");
         });
-    </script>
+    });
+  
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(output.textContent).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy", 1000);
+      });
+    });
+  
+    toggleBtn.addEventListener("click", () => {
+      const visible = output.style.display !== "none";
+      output.style.display = visible ? "none" : "block";
+      toggleBtn.textContent = visible ? "Expand" : "Collapse";
+    });
+  
+    saveBtn.addEventListener("click", () => {
+      const blob = new Blob([output.textContent], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "parsons-problems.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  
+    saveConfigBtn.addEventListener("click", async () => {
+      const config = {
+        language: languageSelect.value,
+        num_problems: parseInt(numSlider.value),
+        category: conceptCategorySelect.value,
+        concepts: { ...selectedConcepts }
+      };
+      const now = new Date();
+      const fileName = `config_${config.language}_${config.category.replace(/\s+/g, "_")}_${now.toISOString().slice(0, 16).replace("T", "_").replace(":", "-")}.json`;
+      const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{ description: "JSON Config", accept: { "application/json": [".json"] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+        } catch {
+          alert("Save canceled or failed.");
+        }
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    });
+  
+    loadConfigBtn.addEventListener("click", () => {
+      importInput.click();
+    });
+  
+    importInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          languageSelect.value = data.language;
+          numSlider.value = data.num_problems;
+          conceptCategorySelect.value = data.category;
+          Object.keys(selectedConcepts).forEach(k => delete selectedConcepts[k]);
+          Object.entries(data.concepts).forEach(([k, v]) => selectedConcepts[k] = v);
+          renderConcepts();
+          updateSelectedConceptsList();
+          updateSpecification();
+        } catch {
+          alert("Invalid configuration file.");
+        }
+      };
+      reader.readAsText(file);
+    });
+  
+    copyApiUrlBtn.addEventListener("click", () => {
+      const url = generateApiUrl();
+      navigator.clipboard.writeText(url).then(() => {
+        copyApiUrlBtn.textContent = "Copied!";
+        setTimeout(() => copyApiUrlBtn.textContent = "Copy API URL", 1500);
+      });
+    });
+  
+    languageSelect.addEventListener("change", updateSpecification);
+    numSlider.addEventListener("input", updateSpecification);
+    conceptCategorySelect.addEventListener("change", () => {
+      renderConcepts();
+      updateSpecification();
+      updateSelectedConceptsList();
+    });
+  
+    (() => {
+      for (const cat in conceptCategories) {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        conceptCategorySelect.appendChild(option);
+      }
+      renderConcepts();
+      updateSelectedConceptsList();
+      updateSpecification();
+    })();
+  </script>
 </body>
 </html>

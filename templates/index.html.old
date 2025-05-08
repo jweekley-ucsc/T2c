@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romance Language Parsons Problem Generator</title>
+    <link rel="icon" href="data:,"></link>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .difficulty-group {
+            margin-bottom: 20px;
+        }
+        .difficulty-group h3 {
+            margin-bottom: 10px;
+        }
+        #generated-url {
+            margin-top: 20px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>Romance Language Parsons Problem Generator</h1>
+    <form id="problem-form">
+        <label for="language">Select Romance Language:</label>
+        <select id="language" name="language" required></select><br><br>
+
+        <h2>Select Concepts to Include</h2>
+        <div id="concept-groups"></div>
+
+        <label for="num_problems">Specify Number of Problems:</label>
+        <input type="range" id="num_problems" name="num_problems" min="1" max="10" value="3" oninput="numProblemsOutput.value = this.value; updateUI();">
+        <output id="numProblemsOutput">3</output><br><br>
+    </form>
+
+    <h2>Problem Specification</h2>
+    <pre id="problem-specification"></pre>
+
+    <h2>Generated URL</h2>
+    <a id="generated-url" href="#" target="_blank">Click to test the generated URL</a>
+
+    <h2>Generated Problems</h2>
+    <button type="button" id="preview-result">Preview Result</button>
+    <pre id="output"></pre>
+
+    <script>
+        const languages = ["French", "Italian", "Spanish"];
+        const conceptGroups = [
+            {
+                difficulty: "Easy",
+                concepts: {
+                    "Subject–verb agreement": true,
+                    "Definite and indefinite articles": false,
+                    "Basic sentence structure": true,
+                    "Regular verb conjugation (present tense)": false,
+                    "Pronoun use": false
+                }
+            },
+            {
+                difficulty: "Medium",
+                concepts: {
+                    "Past tenses (passé composé / passato prossimo)": false,
+                    "Gender and number agreement": false,
+                    "Reflexive verbs": false,
+                    "Prepositions and contractions": false,
+                    "Imperfect tense (imparfait / imperfetto)": false
+                }
+            },
+            {
+                difficulty: "Hard",
+                concepts: {
+                    "Plus-que-parfait / Trapassato prossimo": false,
+                    "Subjunctive mood (le subjonctif / il congiuntivo)": false,
+                    "Future perfect (futur antérieur / futuro anteriore)": false,
+                    "Indirect speech with tense shifting": false,
+                    "Si clauses and conditional tenses": false
+                }
+            }
+        ];
+    
+        // Populate language dropdown
+        const languageSelect = document.getElementById('language');
+        languages.forEach(language => {
+            const option = document.createElement('option');
+            option.value = language;
+            option.textContent = language;
+            languageSelect.appendChild(option);
+        });
+    
+        // Populate concept groups
+        const conceptGroupsContainer = document.getElementById('concept-groups');
+        conceptGroups.forEach(group => {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'difficulty-group';
+            const groupTitle = document.createElement('h3');
+            groupTitle.textContent = group.difficulty;
+            groupDiv.appendChild(groupTitle);
+    
+            Object.entries(group.concepts).forEach(([concept, defaultValue]) => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'concepts';
+                checkbox.value = concept;
+                checkbox.checked = defaultValue;
+                checkbox.addEventListener('change', updateUI);
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(` ${concept}`));
+                groupDiv.appendChild(label);
+                groupDiv.appendChild(document.createElement('br'));
+            });
+    
+            conceptGroupsContainer.appendChild(groupDiv);
+        });
+    
+        const output = document.getElementById('output');
+    
+        function updateUI() {
+            const language = document.getElementById('language').value;
+            const concepts = conceptGroups.reduce((acc, group) => {
+                acc[group.difficulty] = {};
+                Object.entries(group.concepts).forEach(([concept]) => {
+                    acc[group.difficulty][concept] = document.querySelector(`input[name="concepts"][value="${concept}"]`).checked;
+                });
+                return acc;
+            }, {});
+            const num_problems = document.getElementById('num_problems').value;
+            const problemSpec = {
+                language,
+                concepts,
+                num_problems: parseInt(num_problems, 10)
+            };
+            // Update problem specification display
+            document.getElementById('problem-specification').textContent = JSON.stringify(problemSpec, null, 2);
+            // Update generated URL
+            const queryParams = new URLSearchParams({
+                specification: btoa(unescape(encodeURIComponent(JSON.stringify(problemSpec))))
+            });
+            const url = `/generate-problems?${queryParams.toString()}`;
+            const generatedUrlAnchor = document.getElementById('generated-url');
+            generatedUrlAnchor.href = url;
+            generatedUrlAnchor.textContent = url;
+        }
+    
+        // Setup event listeners
+        languageSelect.addEventListener('change', updateUI);
+        document.querySelectorAll('input[name="concepts"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateUI);
+        });
+        document.getElementById('num_problems').addEventListener('input', updateUI);
+    
+        // Initial render
+        updateUI();
+    
+        const previewButton = document.getElementById('preview-result');
+        previewButton.addEventListener('click', () => {
+            previewButton.disabled = true;
+            fetch(document.getElementById('generated-url').href)
+                .then(response => {
+                    previewButton.disabled = false;
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch problems');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    output.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    output.textContent = `Error: ${error.message}`;
+                });
+        });
+    </script>
+</body>
+</html>
